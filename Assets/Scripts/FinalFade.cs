@@ -3,12 +3,10 @@ using System.Collections.Generic;
 using UnityEngine;
 
 using UnityEngine.SceneManagement;
-using Aura2API;
 
 public class FinalFade : MonoBehaviour
 {
     //public AuraBaseSettings setFade;
-    public AuraVolume globalVolume;
 
     public float min = 0.025f;
     public float max = 2;
@@ -29,8 +27,6 @@ public class FinalFade : MonoBehaviour
         //Debug.Log("VALUE :" + startValue);
         if (triggerEnd)
         {
-            globalVolume.densityInjection.strength = startValue;
-            globalVolume.lightInjection.injectionParameters.strength = startValue;
             startValue += changePerSecond;
         }
     }

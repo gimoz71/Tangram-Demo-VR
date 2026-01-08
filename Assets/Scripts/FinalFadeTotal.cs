@@ -1,7 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using Aura2API;
 
 public class FinalFadeTotal : MonoBehaviour
 {
