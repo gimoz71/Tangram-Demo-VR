@@ -1,0 +1,47 @@
+# --- Cartelle temporanee di Unity (DA IGNORARE SEMPRE) ---
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+
+# --- Eccezioni Importanti ---
+# Non ignorare mai i meta file dentro Assets, sono vitali!
+!/[Aa]ssets/**/*.meta
+
+# --- IDE e file di sistema (Visual Studio, Rider, Mac/Windows) ---
+.vs/
+.gradle/
+.idea/
+.DS_Store
+Thumbs.db
+ExportedObj/
+.consulo/
+
+# File di progetto generati automaticamente (non servono online)
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# --- Build e pacchetti ---
+*.apk
+*.aab
+*.unitypackage
+
+# File di crash e debug
+sysinfo.txt
+crashlytics-build.properties
