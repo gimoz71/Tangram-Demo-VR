@@ -33,6 +33,7 @@
   <Project Path="Unity.VisualStudio.Editor.csproj" />
   <Project Path="Unity.XR.Oculus.Editor.csproj" />
   <Project Path="PPv2URPConverters.csproj" />
+  <Project Path="Unity.XR.Hands.csproj" />
   <Project Path="Unity.Rider.Editor.csproj" />
   <Project Path="Unity.CollabProxy.Editor.csproj" />
   <Project Path="Unity.Services.Core.Configuration.csproj" />
@@ -50,6 +51,7 @@
   <Project Path="Assembly-CSharp.csproj" />
   <Project Path="Unity.TextMeshPro.csproj" />
   <Project Path="Unity.XR.Management.Editor.csproj" />
+  <Project Path="Unity.XR.Interaction.Toolkit.Samples.Hands.csproj" />
   <Project Path="Unity.Services.Analytics.Editor.csproj" />
   <Project Path="Unity.VSCode.Editor.csproj" />
   <Project Path="Unity.Burst.Editor.csproj" />
@@ -72,6 +74,7 @@
   <Project Path="Unity.Mathematics.Editor.csproj" />
   <Project Path="Unity.Services.Core.Telemetry.csproj" />
   <Project Path="Unity.Services.Core.Components.csproj" />
+  <Project Path="Unity.XR.Hands.Editor.csproj" />
   <Project Path="UnityEngine.Purchasing.WinRTCore.csproj" />
   <Project Path="Purchasing.Common.csproj" />
   <Project Path="Unity.Services.Core.Threading.csproj" />
@@ -89,6 +92,8 @@
   <Project Path="UnityEngine.Purchasing.SecurityStub.csproj" />
   <Project Path="Analytics.csproj" />
   <Project Path="Unity.XR.OpenXR.Features.OculusQuestSupport.csproj" />
+  <Project Path="Unity.XR.Interaction.Toolkit.Samples.Hands.Editor.csproj" />
+  <Project Path="Unity.XR.Hands.Samples.VisualizerSample.csproj" />
   <Project Path="Unity.XR.OpenXR.Features.MockRuntime.csproj" />
   <Project Path="Unity.XR.Interaction.Toolkit.Samples.StarterAssets.Editor.csproj" />
   <Project Path="UnityEditor.SpatialTracking.csproj" />
