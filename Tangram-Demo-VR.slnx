@@ -15,9 +15,9 @@
   <Project Path="Unity.Timeline.Editor.csproj" />
   <Project Path="Unity.RenderPipelines.Core.Runtime.csproj" />
   <Project Path="Unity.Mathematics.csproj" />
-  <Project Path="UnityEditor.Purchasing.csproj" />
-  <Project Path="Unity.RenderPipelines.Core.Editor.csproj" />
   <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="Unity.RenderPipelines.Core.Editor.csproj" />
+  <Project Path="UnityEditor.Purchasing.csproj" />
   <Project Path="Meta.XR.BuildingBlocks.Editor.csproj" />
   <Project Path="UnityEngine.Purchasing.Stores.csproj" />
   <Project Path="UnityEditor.TestRunner.csproj" />
