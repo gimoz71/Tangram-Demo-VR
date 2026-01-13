@@ -1,84 +1,84 @@
-# Tangram VR Demo: Technical Setup & VR Configuration
+# Tangram VR Demo - Setup Tecnico & Configurazione VR
 
-## Target Platform
+## Piattaforma di Destinazione
 
 * **Hardware:** Meta Quest 2 / Meta Quest 3
 * **OS:** Android
-* **Architecture:** ARM64
+* **Architettura:** ARM64
 
-## Core Packages & Dependencies
+## Pacchetti Core & Dipendenze
 
 * **Render Pipeline:** Universal Render Pipeline (URP)
 * **XR Framework:** XR Interaction Toolkit (v2.6.5+)
 * **Input System:** Unity Input System (Action-based)
 * **XR Plugin Management:** OpenXR / Oculus
 
-## Rendering Configuration (URP Assets)
+## Configurazione Rendering (Asset URP)
 
-Impostazioni ottimizzate per standalone VR:
+Impostazioni ottimizzate per VR standalone:
 
-* **HDR:** **Disabled** (OFF) - Per ottimizzazione memoria e performance.
+* **HDR:** **Disabilitato** (OFF) - Critico per ottimizzazione memoria e performance.
 * **Post-Processing:**
-* **Tonemapping:** Enabled (Mode: *ACES* su LDR) via Global Volume.
-* **Color Adjustments:** Post Exposure / Contrast / Saturation attivi per compensare assenza HDR.
-
+* **Tonemapping:** Abilitato (Modalità: *ACES* su LDR) via Global Volume.
+* **Color Adjustments:** Post Exposure / Contrast / Saturation attivi per compensare l'assenza di HDR.
 
 * **Lighting:**
 * **Main Light:** Baked (Mixed Lighting).
 * **Additional Lights:** Realtime (Spotlights).
 
-
-* **Shadows:**
-* **Soft Shadows:** Enabled.
-* **Additional Lights Shadowmap Resolution:** 2048 (per eliminare artefatti su luci dinamiche).
+* **Shadows (Ombre):**
+* **Soft Shadows:** Abilitate.
+* **Additional Lights Shadowmap Resolution:** 2048 (per eliminare artefatti/aliasing su luci dinamiche).
 * **Shadow Distance:** Ottimizzata per room-scale (15-20m).
 
 
 
 ## Baking & Lightmapping
 
-* **Lightmap Resolution:** Low/Medium (globale).
-* **Scale in Lightmap:** Aumentata (2x - 4x) specificamente su oggetti di interazione (Tavolo, props statici) per evitare aliasing.
+* **Lightmap Resolution:** Bassa/Media (Globale).
+* **Scale in Lightmap:** Aumentata (2x - 4x) specificamente su Tavoli interattivi/Props per evitare ombre scalettate (aliasing).
 * **Filtering:** Advanced.
-* **Compression:** High Quality (o *None* se presenti artefatti critici).
+* **Compression:** High Quality (o *None* se persistono artefatti visivi).
 
-## XR Interaction Setup
+## Setup Interazione XR
 
-Configurazione basata su *ActionBasedControllerManager* (Starter Assets) modificata.
+Configurazione basata su *Starter Assets* modificati.
 
 ### Interaction Layers
 
-* **Teleport Interactor (Ray):** Mask su layer `Teleport`.
-* **Teleport Area/Anchor:** Layer `Teleport`.
-* **Physics Ray:** Mask su `Everything` (escluso Teleport se necessario).
+* **Teleport Interactor (Ray):** Mask impostata solo su layer `Teleport`.
+* **Teleport Area/Anchor:** Layer impostato su `Teleport`.
+* **Physics Ray:** Mask impostata su `Everything` (escluso Teleport).
 
-### Locomotion Scheme
+### Schema di Locomozione
 
 Gestione input separata per evitare conflitti:
 
 * **Left Controller:**
-* *Move:* Enabled (Continuous Move Provider).
-* *Turn:* Disabled.
+* *Move:* Abilitato (Continuous Move Provider).
+* *Turn:* Disabilitato.
 * *Teleport:* Gestito via script custom.
-
 
 * **Right Controller:**
-* *Move:* Disabled.
-* *Turn:* Enabled (Snap Turn Provider).
+* *Move:* Disabilitato.
+* *Turn:* Abilitato (Snap Turn Provider).
 * *Teleport:* Gestito via script custom.
 
-
-
-### Custom Scripting
+### Scripting Custom
 
 * **`TeleportToggler.cs`:**
-* Gestisce l'abilitazione/disabilitazione runtime del Teleport Interactor.
-* Forza la separazione dei ruoli dei joystick (Move vs Turn) all'avvio.
-* Disabilita la logica `ActionBasedControllerManager` standard per prevenire conflitti di input.
+* Toggle runtime per abilitare/disabilitare il Teleport Interactor.
+* Forza la separazione rigida dei ruoli joystick (Move vs Turn) all'inizializzazione.
+* Disabilita la logica standard `ActionBasedControllerManager` per prevenire override degli input.
 
+* **`TangramLogger.cs`:**
+* **Funzione:** Traccia le interazioni utente con i pezzi del Tangram.
+* **Eventi:** Iscrizione a `SelectEntered` (Presa/Grab) e `SelectExited` (Rilascio/Release) su oggetti `XRGrabInteractable`.
+* **Output:** Aggiunge dati a file CSV in `Application.persistentDataPath`.
+* **Formato Dati:** `Timestamp, EventType (GRAB/RELEASE), ObjectName`.
 
 
 ## Note di Sviluppo
 
-* **Legacy VR:** Script obsoleti basati su `XRSettings.enabled` rimossi.
-* **Assembly Definitions:** File `.asmdef` degli *Starter Assets* rimosso per permettere l'accesso agli script interni (`ActionBasedControllerManager`) da codice utente.
+* **Legacy VR:** Rimossi script obsoleti basati su `XRSettings.enabled` e tutte le librerie e riferimenti a SteamVR
+* **Assembly Definitions:** Eliminato file `.asmdef` dagli *Starter Assets* per consentire l'accesso agli script interni (`ActionBasedControllerManager`) dal codice utente.
