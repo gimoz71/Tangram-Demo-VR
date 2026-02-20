@@ -49,3 +49,7 @@ crashlytics-build.properties
 # Cartella locale di Continue (indici e cache)
 .continue/
 .continueignore
+
+# altro
+
+/[Ll]ogs/
