@@ -11,6 +11,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scene/Tangram_1.unity
     guid: 282c5e8367f81014881d53d66c9b5a7a
+  - enabled: 1
+    path: Assets/Scene/Tangram_2.unity
+    guid: d6f487f3b17f99c46b4108608e579414
   m_configObjects:
     Unity.XR.Oculus.Settings: {fileID: 11400000, guid: 9595cc222f343f245b15fe89a07a36d9,
       type: 2}
