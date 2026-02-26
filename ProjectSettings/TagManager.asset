@@ -6,9 +6,11 @@ TagManager:
   tags:
   - subMenu
   - mainMenu
-  - generic_shape
   - triangle_big
   - triangle_small
+  - square
+  - parallelogram
+  - triangle_medium
   layers:
   - Default
   - TransparentFX

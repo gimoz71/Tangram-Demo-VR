@@ -131,8 +131,8 @@ public class TangramPatternMatcher : MonoBehaviour
                     float dist = Vector3.Distance(currentRelPos, goal.relPosition);
                     float angle = Quaternion.Angle(currentRelRot, goal.relRotation);
 
-                    // C. Verifichiamo se siamo entro la tolleranza
-                    if (dist <= positionTolerance && angle <= rotationTolerance)
+                    // C. Verifichiamo se siamo entro la tolleranza (con controllo simmetrie)
+                    if (dist <= positionTolerance && IsRotationValid(piece.transform, angle, rotationTolerance))
                     {
                         // TROVATO! Questo pezzo occupa questo slot.
                         availableGoalIndices.RemoveAt(j); // Rimuoviamo lo slot perché è occupato
@@ -148,6 +148,33 @@ public class TangramPatternMatcher : MonoBehaviour
 
         // Se tutti gli slot sono stati riempiti (count == 0), abbiamo vinto!
         return availableGoalIndices.Count == 0;
+    }
+
+    /// <summary>
+    /// Controlla se la rotazione è valida, tenendo conto delle simmetrie (Quadrato e Parallelogramma).
+    /// </summary>
+    private bool IsRotationValid(Transform currentPiece, float angleDifference, float tolerance)
+    {
+        if (currentPiece.CompareTag("Square"))
+        {
+            // Il quadrato è identico ogni 90 gradi
+            angleDifference = angleDifference % 90f;
+            if (angleDifference > 45f)
+            {
+                angleDifference = 90f - angleDifference;
+            }
+        }
+        else if (currentPiece.CompareTag("Parallelogram"))
+        {
+            // Il parallelogramma è identico ogni 180 gradi
+            angleDifference = angleDifference % 180f;
+            if (angleDifference > 90f)
+            {
+                angleDifference = 180f - angleDifference;
+            }
+        }
+
+        return angleDifference <= tolerance;
     }
 
     // =========================================================
