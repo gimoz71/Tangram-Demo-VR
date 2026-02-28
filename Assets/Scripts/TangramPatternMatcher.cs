@@ -155,7 +155,7 @@ public class TangramPatternMatcher : MonoBehaviour
     /// </summary>
     private bool IsRotationValid(Transform currentPiece, float angleDifference, float tolerance)
     {
-        if (currentPiece.CompareTag("Square"))
+        if (currentPiece.CompareTag("square"))
         {
             // Il quadrato è identico ogni 90 gradi
             angleDifference = angleDifference % 90f;
@@ -164,7 +164,7 @@ public class TangramPatternMatcher : MonoBehaviour
                 angleDifference = 90f - angleDifference;
             }
         }
-        else if (currentPiece.CompareTag("Parallelogram"))
+        else if (currentPiece.CompareTag("parallelogram"))
         {
             // Il parallelogramma è identico ogni 180 gradi
             angleDifference = angleDifference % 180f;
