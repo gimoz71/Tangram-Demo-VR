@@ -528,7 +528,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -0.1019, y: 0.1772}
+  m_AnchoredPosition: {x: 0.0322, y: 0.1796}
   m_SizeDelta: {x: 320, y: 160}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &502017671
@@ -774,7 +774,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Tangram Demo
+  m_text: SkillVerseVR
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: db9dfd41e3f895f46adf92a3bf352501, type: 2}
   m_sharedMaterial: {fileID: -5460763202113064729, guid: db9dfd41e3f895f46adf92a3bf352501,
