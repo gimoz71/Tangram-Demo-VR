@@ -1653,6 +1653,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9d0a13f9cc3e5be409ffda9c1ed7bb1f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  serverEndpointUrl: http://192.168.178.48/sessions/json
   currentSessionID: 
 --- !u!1 &1204757481
 GameObject:
