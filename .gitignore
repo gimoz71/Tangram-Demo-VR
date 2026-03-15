@@ -52,4 +52,4 @@ crashlytics-build.properties
 
 # altro
 
-/[Ll]ogs/
+/Assets/[Ll]ogs/
