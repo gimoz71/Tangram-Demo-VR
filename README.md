@@ -89,16 +89,17 @@ Il sistema si basa su quattro pilastri: Logica di Gioco, Tracciamento Utente, Mo
         * `Timer_Reached_Zero`: Marcatore di esaurimento del tempo. Isola i dati successivi per l'analisi del comportamento in fase di "post-scadenza" e tolleranza alla frustrazione.
         * `Timer_Stopped_On_Win`: Registrato al completamento del puzzle. Il valore `Duration` associato quantifica il tempo residuo di anticipo (se > 0) o conferma matematicamente la risoluzione in post-scadenza (se = 0.0).
 
-### 3. Data Logging System
+### 3. Data Logging System (Doppio Export)
 
 * **`TangramLogger.cs`:**
-    * **Funzione:** Centralizza la raccolta dati e la scrittura su file CSV.
-    * **Gestione Sessioni:** Aggiunge automaticamente un header e una riga vuota se il file esiste già (append mode).
+    * **Funzione:** Centralizza la raccolta dati gestendo un doppio binario: salvataggio locale e trasmissione API asincrona.
+    * **Export CSV Locale:** Aggiunge automaticamente un header e una riga vuota se il file esiste già (append mode). Registra in modo onnicomprensivo *tutti* gli eventi, inclusi i marker psicologici del timer.
+    * **Export API (FastAPI):** Al completamento della sessione, pacchettizza un payload JSON e lo invia al server (POST). **Filtro di Sicurezza:** Il payload scarta intenzionalmente i marker del timer e invia solo gli eventi core (`GAZE`, `GRAB`, `FINE`) per rispettare rigorosamente il modello di validazione del database backend (Pydantic).
     * **Durata Azioni:**
         * *GRAB:* Calcola la durata (DeltaTime) tra `SelectEntered` e `SelectExited` usando un Dictionary interno.
         * *GAZE:* Riceve la durata dello sguardo dal Tracker.
     * **Safety Switch:** Disabilita qualsiasi scrittura dopo l'evento di Vittoria (`FINE`).
-    * **Output Path:** `Application.persistentDataPath/TangramLog.csv`.
+    * **Output Path Locale:** `Application.persistentDataPath/TangramLog.csv`.
 
 ### 4. User Tracking (Gaze)
 
@@ -115,19 +116,31 @@ Il sistema si basa su quattro pilastri: Logica di Gioco, Tracciamento Utente, Mo
     * **Funzione:** Sostituisce la texture di un *URP Decal Projector* alla vittoria.
     * **Fix Shader URP:** Gestisce correttamente i canali colore (evitando che il Rosso venga interpretato come Alpha) e resetta la tinta del materiale a Bianco puro.
 
-## Struttura Dati (CSV Output)
+## Struttura Dati
 
-Il file di log utilizza il punto e virgola (`;`) come separatore per compatibilità Excel/Sheets.
+Il file di log CSV locale utilizza il punto e virgola (`;`) come separatore per compatibilità Excel/Sheets.
 
 | Colonna | Descrizione | Esempio |
 | :--- | :--- | :--- |
-| **Date** | Data sessione (dd/MM/yyyy) | `13/01/2026` |
-| **Time** | Ora evento (fine azione/trigger) | `10:45:01` |
+| **Date** | Data sessione (dd/MM/yyyy) | `15/03/2026` |
+| **Time** | Ora evento con millisecondi (HH:mm:ss.fff) | `10:36:58.180` |
 | **Event** | Tipo evento (`GRAB`, `GAZE`, `FINE`, `EVENT`) | `GRAB` |
 | **ObjectName** | Nome oggetto, Zona interesse o Nome Evento Custom | `Triangolo_Rosso` (o `Pressure_Phase_Started`) |
-| **Duration** | Durata in secondi o Tempo rimanente (2 decimali) | `4.52` (o `15.00`) |
+| **Duration** | Durata in secondi o Tempo rimanente | `4.52` (o `15.00`) |
 
-## Note di Sviluppo
-
-* **Legacy VR:** Rimossi script obsoleti basati su `XRSettings.enabled` e tutte le librerie e riferimenti a SteamVR.
-* **Assembly Definitions:** Eliminato file `.asmdef` dagli *Starter Assets* per consentire l'accesso agli script interni (`ActionBasedControllerManager`) dal codice utente.
+### Payload API Server (JSON)
+Il pacchetto inviato al server utilizza chiavi in *snake_case* e numeri float rigorosamente convertiti con punto decimale. Struttura attesa:
+```json
+{
+  "session_id": "5391",
+  "filename": "Tangram_Session_5391.csv",
+  "events": [
+    {
+      "date": "15/03/2026",
+      "time": "10:36:58.180",
+      "event_type": "GAZE",
+      "object_name": "Tangram",
+      "duration": 0.1949230432510376
+    }
+  ]
+}
