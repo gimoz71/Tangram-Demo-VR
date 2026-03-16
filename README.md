@@ -55,13 +55,13 @@ Configurazione basata su *Starter Assets* modificati.
 Gestione input separata per evitare conflitti:
 
 * **Left Controller:**
-    * *Move:* Abilitato (Continuous Move Provider).
-    * *Turn:* Disabilitato.
-    * *Teleport:* Gestito via script custom.
+    * *Move:** Abilitato (Continuous Move Provider).
+    * *Turn:** Disabilitato.
+    * *Teleport:** Gestito via script custom.
 * **Right Controller:**
-    * *Move:* Disabilitato.
-    * *Turn:* Abilitato (Snap Turn Provider).
-    * *Teleport:* Gestito via script custom.
+    * *Move:** Disabilitato.
+    * *Turn:** Abilitato (Snap Turn Provider).
+    * *Teleport:** Gestito via script custom.
 
 ## Architettura Software & Scripting Custom
 
@@ -82,61 +82,54 @@ Il sistema si basa su quattro pilastri: Logica di Gioco, Tracciamento Utente, Mo
 ### 2. Modulazione Stress & Behavioral Tracking
 
 * **`TangramTimer.cs`:**
-    * **Funzione:** Modulo indipendente progettato per indurre pressione temporale (stressor) nell'utente tramite feedback visivi e uditivi, senza causare hard-lock o interruzioni del gameplay alla scadenza.
-    * **Gestione Soglia (Pressure Threshold):** Attivabile a *X* secondi dalla fine (`pressureThreshold`). Cambia dinamicamente il colore del testo UI (rosso) e avvia un tick audio singolo rigorosamente sincronizzato in realtime al calcolo del secondo intero (`Mathf.CeilToInt`).
-    * **Tracciamento "Curva di Stress" (Marker CSV):** Il modulo inietta eventi specifici nel `TangramLogger` per mappare l'andamento comportamentale e cognitivo dell'utente sotto pressione:
-        * `Pressure_Phase_Started`: Registrato all'innesco della soglia di stress. Consente l'analisi comparativa (A/B) delle metriche motorie (Grab/Gaze) in stato di quiete versus stato di allerta.
-        * `Timer_Reached_Zero`: Marcatore di esaurimento del tempo. Isola i dati successivi per l'analisi del comportamento in fase di "post-scadenza" e tolleranza alla frustrazione.
-        * `Timer_Stopped_On_Win`: Registrato al completamento del puzzle. Il valore `Duration` associato quantifica il tempo residuo di anticipo (se > 0) o conferma matematicamente la risoluzione in post-scadenza (se = 0.0).
+    * **Funzione:** Modulo indipendente progettato per indurre pressione temporale (stressor) nell'utente tramite feedback visivi e uditivi.
+    * **Gestione Soglia (Pressure Threshold):** Attivabile a *X* secondi dalla fine (`pressureThreshold`). Cambia dinamicamente il colore del testo UI (rosso) e avvia un tick audio singolo **rigorosamente sincronizzato** in realtime al calcolo del secondo intero (`Mathf.CeilToInt`).
+    * **Tracciamento "Curva di Stress" (Marker CSV):** Il modulo inietta eventi specifici nel `TangramLogger` per mappare l'andamento comportamentale sotto pressione:
+        * `Pressure_Phase_Started`: Registrato all'innesco della soglia di stress.
+        * `Timer_Reached_Zero`: Marcatore di esaurimento del tempo; isola i dati per l'analisi del comportamento in fase di "post-scadenza".
+        * `Timer_Stopped_On_Win`: Registrato al completamento del puzzle.
 
-### 3. Data Logging System (Doppio Export)
+### 3. Data Logging System & Networking (Update Standalone)
 
 * **`TangramLogger.cs`:**
-    * **Funzione:** Centralizza la raccolta dati gestendo un doppio binario: salvataggio locale e trasmissione API asincrona.
-    * **Export CSV Locale:** Aggiunge automaticamente un header e una riga vuota se il file esiste già (append mode). Registra in modo onnicomprensivo *tutti* gli eventi, inclusi i marker psicologici del timer.
-    * **Export API (FastAPI):** Al completamento della sessione, pacchettizza un payload JSON e lo invia al server (POST). **Filtro di Sicurezza:** Il payload scarta intenzionalmente i marker del timer e invia solo gli eventi core (`GAZE`, `GRAB`, `FINE`) per rispettare rigorosamente il modello di validazione del database backend (Pydantic).
-    * **Durata Azioni:**
-        * *GRAB:* Calcola la durata (DeltaTime) tra `SelectEntered` e `SelectExited` usando un Dictionary interno.
-        * *GAZE:* Riceve la durata dello sguardo dal Tracker.
-    * **Safety Switch:** Disabilita qualsiasi scrittura dopo l'evento di Vittoria (`FINE`).
+    * **Funzione:** Centralizza la raccolta dati gestendo salvataggio locale e trasmissione API asincrona.
+    * **Export CSV Locale:** Registra con precisione al **millisecondo** (`HH:mm:ss.fff`) tutti gli eventi, inclusi i marker psicologici del timer.
+    * **Comunicazione Standalone (FastAPI):**
+        * **IP Addressing:** Configurato per puntare all'IP statico del server nella rete locale (LAN) invece di `localhost`.
+        * **Security:** Abilitato `usesCleartextTraffic` nel Manifest per comunicazioni HTTP verso host locali.
+        * **Timeout & Async:** Gestione asincrona tramite `UnityWebRequest` con timeout di 5s per evitare stutter nel visore.
+    * **Filtro di Sicurezza:** Il payload API scarta i marker del timer inviando solo gli eventi core (`GAZE`, `GRAB`, `FINE`) per conformità al database.
     * **Output Path Locale:** `Application.persistentDataPath/TangramLog.csv`.
 
 ### 4. User Tracking (Gaze)
 
-* **`HeadGazeTracker.cs` (Main Camera):**
-    * **Funzione:** Raycasting continuo dal centro degli occhi.
-    * **Logica:** Rileva oggetti con script `InterestZone`. Calcola il tempo di permanenza dello sguardo su una zona specifica.
-    * **Output:** Invia i dati al Logger solo al cambio di zona o distoglimento dello sguardo.
-* **`InterestZone.cs`:**
-    * Componente "etichetta" da assegnare agli oggetti di interesse (Muri, Tavoli, UI). Richiede Collider.
+* **`HeadGazeTracker.cs` (Main Camera):** Raycasting continuo dal centro degli occhi. Rileva oggetti con script `InterestZone`. Invia i dati al Logger al cambio di zona o distoglimento dello sguardo.
+* **`InterestZone.cs`:** Componente "etichetta" assegnato agli oggetti di interesse (Muri, Tavoli, UI).
 
 ### 5. Feedback Visivo (Reward)
 
-* **`DecalChanger.cs`:**
-    * **Funzione:** Sostituisce la texture di un *URP Decal Projector* alla vittoria.
-    * **Fix Shader URP:** Gestisce correttamente i canali colore (evitando che il Rosso venga interpretato come Alpha) e resetta la tinta del materiale a Bianco puro.
+* **`DecalChanger.cs`:** Sostituisce la texture di un *URP Decal Projector* alla vittoria. Gestisce correttamente i canali colore e resetta la tinta del materiale a Bianco puro.
 
 ## Struttura Dati
 
-Il file di log CSV locale utilizza il punto e virgola (`;`) come separatore per compatibilità Excel/Sheets.
+Il file di log CSV locale utilizza il punto e virgola (`;`) come separatore.
 
 | Colonna | Descrizione | Esempio |
 | :--- | :--- | :--- |
-| **Date** | Data sessione (dd/MM/yyyy) | `15/03/2026` |
+| **Date** | Data sessione (dd/MM/yyyy) | `16/03/2026` |
 | **Time** | Ora evento con millisecondi (HH:mm:ss.fff) | `10:36:58.180` |
 | **Event** | Tipo evento (`GRAB`, `GAZE`, `FINE`, `EVENT`) | `GRAB` |
-| **ObjectName** | Nome oggetto, Zona interesse o Nome Evento Custom | `Triangolo_Rosso` (o `Pressure_Phase_Started`) |
-| **Duration** | Durata in secondi o Tempo rimanente | `4.52` (o `15.00`) |
+| **ObjectName** | Nome oggetto, Zona interesse o Marker Custom | `Triangolo_Rosso` |
+| **Duration** | Durata in secondi o Tempo rimanente | `4.52` |
 
 ### Payload API Server (JSON)
-Il pacchetto inviato al server utilizza chiavi in *snake_case* e numeri float rigorosamente convertiti con punto decimale. Struttura attesa:
 ```json
 {
   "session_id": "5391",
   "filename": "Tangram_Session_5391.csv",
   "events": [
     {
-      "date": "15/03/2026",
+      "date": "16/03/2026",
       "time": "10:36:58.180",
       "event_type": "GAZE",
       "object_name": "Tangram",
