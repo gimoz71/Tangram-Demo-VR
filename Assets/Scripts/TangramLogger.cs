@@ -207,27 +207,56 @@ public class TangramLogger : MonoBehaviour
         }
 
         string jsonPayload = JsonUtility.ToJson(sessionDataForServer);
+        Debug.Log($"[API] JSON in partenza: {jsonPayload}");
 
-        using (UnityWebRequest request = new UnityWebRequest(serverEndpointUrl, "POST"))
+        int maxRetries = 3;
+        int retryCount = 0;
+        bool success = false;
+        float delayBetweenRetries = 2.0f;
+
+        while (retryCount < maxRetries && !success)
         {
-            byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonPayload);
-            request.uploadHandler = new UploadHandlerRaw(bodyRaw);
-            request.downloadHandler = new DownloadHandlerBuffer();
-            request.SetRequestHeader("Content-Type", "application/json");
-
-            Debug.Log($"[API] Invio di {sessionDataForServer.events.Count} eventi al server...");
-
-            yield return request.SendWebRequest();
-
-            if (request.result == UnityWebRequest.Result.ConnectionError || request.result == UnityWebRequest.Result.ProtocolError)
+            using (UnityWebRequest request = new UnityWebRequest(serverEndpointUrl, "POST"))
             {
-                Debug.LogError($"[API] Errore invio dati a SkillVRDB: {request.error}");
-            }
-            else
-            {
-                Debug.Log($"[API] Dati inviati con successo! Risposta: {request.downloadHandler.text}");
+                byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonPayload);
+                request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+                request.downloadHandler = new DownloadHandlerBuffer();
+                request.SetRequestHeader("Content-Type", "application/json");
+
+                Debug.Log($"[API] Tentativo di invio {retryCount + 1} di {maxRetries} ({sessionDataForServer.events.Count} eventi)...");
+
+                yield return request.SendWebRequest();
+
+                if (request.result == UnityWebRequest.Result.Success)
+                {
+                    Debug.Log($"[API] Dati inviati con successo! Risposta: {request.downloadHandler.text}");
+                    success = true;
+                }
+                else
+                {
+                    retryCount++;
+
+                    // Errore 409: Il server ha già questi dati (evitiamo di riprovare inutilmente)
+                    if (request.responseCode == 409)
+                    {
+                        Debug.LogWarning("[API] Conflitto (409): La sessione esiste già sul server. Esco dal loop.");
+                        success = true;
+                        yield break;
+                    }
+
+                    Debug.LogError($"[API] Tentativo {retryCount} fallito: {request.error}");
+
+                    if (retryCount < maxRetries)
+                    {
+                        Debug.Log($"[API] Attesa di {delayBetweenRetries} secondi prima del prossimo tentativo...");
+                        yield return new WaitForSeconds(delayBetweenRetries);
+                    }
+                    else
+                    {
+                        Debug.LogError("[API] Invio fallito definitivamente dopo tutti i tentativi.");
+                    }
+                }
             }
         }
-        Debug.Log($"[API] JSON in partenza: {jsonPayload}");
     }
 }

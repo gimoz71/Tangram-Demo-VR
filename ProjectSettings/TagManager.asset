@@ -11,6 +11,7 @@ TagManager:
   - square
   - parallelogram
   - triangle_medium
+  - generic_shape
   layers:
   - Default
   - TransparentFX
@@ -23,9 +24,9 @@ TagManager:
   - external
   - PP
   - Teleport
-  - totem
+  - Player
   - internal
-  - 
+  - Interactable
   - 
   - 
   - 
