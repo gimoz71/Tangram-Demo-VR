@@ -9,6 +9,9 @@ public class TangramTimer : MonoBehaviour
     [Tooltip("Tempo totale a disposizione in secondi (es. 60 = 1 minuto)")]
     public float totalTimeInSeconds = 60f;
 
+    [Tooltip("Ritardo prima che il timer inizi a scalare (per attendere il fade iniziale)")]
+    public float initialDelay = 2.0f;
+
     [Tooltip("A quanti secondi dalla fine deve partire il ticchettio ansiogeno? (es. 15)")]
     public float pressureThreshold = 15f;
 
@@ -41,6 +44,29 @@ public class TangramTimer : MonoBehaviour
         currentTime = totalTimeInSeconds;
         lastSecondRecorded = Mathf.CeilToInt(currentTime);
         UpdateUI();
+
+        // FACCIAMO LAMPEGGIARE IL TIMER DURANTE IL DELAY
+        if (blinkCoroutine == null)
+            blinkCoroutine = StartCoroutine(BlinkTextCoroutine());
+
+        StartCoroutine(StartWithDelay());
+    }
+
+    private IEnumerator StartWithDelay()
+    {
+        isRunning = false;
+        yield return new WaitForSeconds(initialDelay);
+
+        // IL DELAY È FINITO: FERMIAMO IL LAMPEGGIO E FACCIAMO PARTIRE IL TIMER
+        if (blinkCoroutine != null)
+        {
+            StopCoroutine(blinkCoroutine);
+            blinkCoroutine = null;
+        }
+
+        // Assicuriamoci che il testo sia visibile quando parte il conteggio
+        if (timerText != null) timerText.enabled = true;
+
         isRunning = true;
     }
 
@@ -75,7 +101,6 @@ public class TangramTimer : MonoBehaviour
     private void StartPressurePhase()
     {
         pressurePhaseStarted = true;
-
         if (timerText != null) timerText.color = Color.red;
 
         TangramLogger logger = FindObjectOfType<TangramLogger>();
@@ -92,6 +117,7 @@ public class TangramTimer : MonoBehaviour
         if (tickAudioSource != null) tickAudioSource.Stop();
         if (timeUpAudioSource != null) timeUpAudioSource.Play();
 
+        // Ricomincia a lampeggiare perché il tempo è finito
         if (blinkCoroutine == null)
             blinkCoroutine = StartCoroutine(BlinkTextCoroutine());
 
@@ -103,7 +129,6 @@ public class TangramTimer : MonoBehaviour
 
     public void StopTimerOnWin()
     {
-        // Se il tempo era GIA' scaduto, ferma il lampeggio e lascia il testo fisso
         if (!isRunning && currentTime <= 0f)
         {
             if (blinkCoroutine != null)
@@ -111,11 +136,10 @@ public class TangramTimer : MonoBehaviour
                 StopCoroutine(blinkCoroutine);
                 blinkCoroutine = null;
             }
-            if (timerText != null) timerText.enabled = true; // Assicura che 00:00 rimanga visibile
+            if (timerText != null) timerText.enabled = true;
         }
         else
         {
-            // Vittoria entro il tempo limite: ferma timer e audio, inizia a lampeggiare
             isRunning = false;
             if (tickAudioSource != null) tickAudioSource.Stop();
 
