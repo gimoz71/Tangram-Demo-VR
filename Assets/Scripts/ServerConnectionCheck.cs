@@ -11,7 +11,7 @@ public class ServerConnectionCheck : MonoBehaviour
 
     [Header("Settings")]
     public string defaultIp = "192.168.178.48";
-    public float timeout = 3.0f;
+    public float timeout = 5.0f; // Alzato a 5 per maggiore stabilità
 
     private string currentIp;
     private string finalUrl;
@@ -19,11 +19,9 @@ public class ServerConnectionCheck : MonoBehaviour
     void Start()
     {
         currentIp = LoadIpFromConfig();
+        finalUrl = $"http://{currentIp}/health";
 
-        // Puntiamo allo stesso endpoint del Logger per massima compatibilità
-        finalUrl = $"http://{currentIp}/sessions/json";
-
-        StartCoroutine(TestConnectionRoutine());
+        StartCoroutine(HealthCheckRoutine());
     }
 
     private string LoadIpFromConfig()
@@ -34,22 +32,25 @@ public class ServerConnectionCheck : MonoBehaviour
 #else
         path = Path.Combine(Application.persistentDataPath, "server_config.txt");
 #endif
+
+        string content = defaultIp;
         if (File.Exists(path))
         {
             try
             {
-                string content = File.ReadAllText(path).Trim();
-                if (!string.IsNullOrEmpty(content)) return content;
+                content = File.ReadAllText(path);
             }
             catch { }
         }
-        return defaultIp;
+
+        // PULIZIA IMMEDIATA: Rimuove spazi, ritorni a capo Windows/Unix e caratteri invisibili
+        return content.Replace("\n", "").Replace("\r", "").Replace(" ", "").Trim();
     }
 
-    private IEnumerator TestConnectionRoutine()
+    private IEnumerator HealthCheckRoutine()
     {
-        // Ritardo per permettere ad Android di stabilizzare la rete
-        yield return new WaitForSeconds(2.0f);
+        // 1. Ritardo iniziale per stabilizzazione Wi-Fi Android
+        yield return new WaitForSeconds(3.5f);
 
         if (statusText != null)
         {
@@ -58,41 +59,42 @@ public class ServerConnectionCheck : MonoBehaviour
             statusText.enabled = true;
         }
 
-        // CREIAMO UN PAYLOAD MINIMO (Uguale alla struttura del Logger)
-        // Questo evita il "Codice 0" perché simula un invio dati reale
-        string dummyJson = "{\"session_id\":\"CHECK\",\"filename\":\"test.csv\",\"events\":[]}";
-
-        // Usiamo la stessa configurazione manuale del Logger
-        using (UnityWebRequest request = new UnityWebRequest(finalUrl, "POST"))
+        int attempts = 2; // Proviamo 2 volte prima di arrenderci
+        for (int i = 0; i < attempts; i++)
         {
-            byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(dummyJson);
-            request.uploadHandler = new UploadHandlerRaw(bodyRaw);
-            request.downloadHandler = new DownloadHandlerBuffer();
-
-            // Header fondamentale per Android
-            request.SetRequestHeader("Content-Type", "application/json");
-            request.timeout = Mathf.CeilToInt(timeout);
-
-            yield return request.SendWebRequest();
-
-            Debug.Log($"[Check] Risposta: {request.responseCode} | Errore: {request.error}");
-
-            // Se il codice è > 0, il server ha risposto (online)
-            // Accettiamo Success (200/201), 409 (già esistente) o 422 (validazione)
-            if (request.result == UnityWebRequest.Result.Success ||
-                request.responseCode == 409 ||
-                request.responseCode == 422 ||
-                request.responseCode == 201)
+            using (UnityWebRequest request = UnityWebRequest.Get(finalUrl))
             {
-                statusText.text = $"Server Online ({currentIp})";
-                statusText.color = Color.green;
-                StartCoroutine(FadeOutText());
-            }
-            else
-            {
-                // Se è ancora 0, mostra l'errore testuale (es. Timeout o DNS)
-                statusText.text = $"Server Offline\n{request.error} (Cod: {request.responseCode})";
-                statusText.color = Color.red;
+                request.SetRequestHeader("User-Agent", "Mozilla/5.0 (Unity/Quest)");
+                request.SetRequestHeader("Accept", "*/*");
+                request.useHttpContinue = false;
+                request.timeout = Mathf.CeilToInt(timeout);
+
+                yield return request.SendWebRequest();
+
+                Debug.Log($"[Check Attempt {i + 1}] Code: {request.responseCode} | Error: {request.error}");
+
+                if (request.result == UnityWebRequest.Result.Success)
+                {
+                    statusText.text = $"Server Online ({currentIp})";
+                    statusText.color = Color.green;
+                    StartCoroutine(FadeOutText());
+                    yield break; // Successo, usciamo
+                }
+                else if (i < attempts - 1)
+                {
+                    // Fallito il primo colpo? Aspettiamo 1.5s e riproviamo
+                    if (statusText != null) statusText.text = "Riconnessione...";
+                    yield return new WaitForSeconds(1.5f);
+                }
+                else
+                {
+                    // Fallimento definitivo
+                    string detail = request.error;
+                    if (string.IsNullOrEmpty(detail)) detail = "Unknown Error";
+
+                    statusText.text = $"Server Offline\n{detail} (0)";
+                    statusText.color = Color.red;
+                }
             }
         }
     }
