@@ -3,7 +3,7 @@
 ## Piattaforma di Destinazione
 
 * **Hardware:** Meta Quest 2 / Meta Quest 3
-* **OS:** Android
+* **OS:** Android (Standalone)
 * **Architettura:** ARM64
 
 ## Versione Unity
@@ -55,13 +55,13 @@ Configurazione basata su *Starter Assets* modificati.
 Gestione input separata per evitare conflitti:
 
 * **Left Controller:**
-    * *Move:** Abilitato (Continuous Move Provider).
-    * *Turn:** Disabilitato.
-    * *Teleport:** Gestito via script custom.
+    * *Move:* Abilitato (Continuous Move Provider).
+    * *Turn:* Disabilitato.
+    * *Teleport:* Gestito via script custom.
 * **Right Controller:**
-    * *Move:** Disabilitato.
-    * *Turn:** Abilitato (Snap Turn Provider).
-    * *Teleport:** Gestito via script custom.
+    * *Move:* Disabilitato.
+    * *Turn:* Abilitato (Snap Turn Provider).
+    * *Teleport:* Gestito via script custom.
 
 ## Architettura Software & Scripting Custom
 
@@ -83,23 +83,29 @@ Il sistema si basa su quattro pilastri: Logica di Gioco, Tracciamento Utente, Mo
 
 * **`TangramTimer.cs`:**
     * **Funzione:** Modulo indipendente progettato per indurre pressione temporale (stressor) nell'utente tramite feedback visivi e uditivi.
-    * **Gestione Soglia (Pressure Threshold):** Attivabile a *X* secondi dalla fine (`pressureThreshold`). Cambia dinamicamente il colore del testo UI (rosso) e avvia un tick audio singolo **rigorosamente sincronizzato** in realtime al calcolo del secondo intero (`Mathf.CeilToInt`).
-    * **Tracciamento "Curva di Stress" (Marker CSV):** Il modulo inietta eventi specifici nel `TangramLogger` per mappare l'andamento comportamentale sotto pressione:
-        * `Pressure_Phase_Started`: Registrato all'innesco della soglia di stress.
-        * `Timer_Reached_Zero`: Marcatore di esaurimento del tempo; isola i dati per l'analisi del comportamento in fase di "post-scadenza".
-        * `Timer_Stopped_On_Win`: Registrato al completamento del puzzle.
+    * **Fase di Start (Blinking Phase):** All'avvio della scena, il timer rimane in stato di pausa per un tempo `initialDelay` (lampeggiante). Questa fase è tracciata per isolare le interazioni avvenute prima dell'inizio effettivo della prova.
+    * **Gestione Soglia (Pressure Threshold):** Attivabile a *X* secondi dalla fine (`pressureThreshold`). Cambia dinamicamente il colore del testo UI (rosso) e avvia un tick audio sincronizzato.
+    * **Tracciamento "Curva di Stress" (Marker CSV):** Il modulo inietta eventi specifici nel `TangramLogger`:
+        * `Timer_Blinking_Phase_Started`: Inizio della fase di attesa iniziale.
+        * `Timer_Countdown_Started`: Fine del delay, il tempo inizia a scalare.
+        * `Pressure_Phase_Started`: Innesco della soglia di stress (testo rosso/audio tick).
+        * `Timer_Reached_Zero`: Esaurimento del tempo.
+        * `Timer_Stopped_On_Win`: Completamento del puzzle.
 
 ### 3. Data Logging System & Networking (Update Standalone)
 
 * **`TangramLogger.cs`:**
     * **Funzione:** Centralizza la raccolta dati gestendo salvataggio locale e trasmissione API asincrona.
-    * **Export CSV Locale:** Registra con precisione al **millisecondo** (`HH:mm:ss.fff`) tutti gli eventi, inclusi i marker psicologici del timer.
+    * **Logica Ibrida di Configurazione:** * **In Editor:** Cerca `server_config.txt` nella cartella `Assets/`.
+        * **Su Visore:** Cerca `server_config.txt` in `\Android\data\[PackageName]\files\`.
+    * **Export CSV Locale:** Registra con precisione al **millisecondo** (`HH:mm:ss.fff`) tutti gli eventi.
+        * **Percorso Log (Quest):** `\Internal shared storage\Documents\TangramVR_Logs\`.
+    * **Diagnostica Connessione (`ServerConnectionCheck.cs`):**
+        * Esegue un **Heartbeat Check** (POST) all'avvio nella scena Start.
+        * Fornisce feedback visivo immediato sull'IP utilizzato e sullo stato (Online/Offline) del server FastAPI sulla porta 80.
     * **Comunicazione Standalone (FastAPI):**
-        * **IP Addressing:** Configurato per puntare all'IP statico del server nella rete locale (LAN) invece di `localhost`.
         * **Security:** Abilitato `usesCleartextTraffic` nel Manifest per comunicazioni HTTP verso host locali.
-        * **Timeout & Async:** Gestione asincrona tramite `UnityWebRequest` con timeout di 5s per evitare stutter nel visore.
     * **Filtro di Sicurezza:** Il payload API scarta i marker del timer inviando solo gli eventi core (`GAZE`, `GRAB`, `FINE`) per conformità al database.
-    * **Output Path Locale:** `Application.persistentDataPath/TangramLog.csv`.
 
 ### 4. User Tracking (Gaze)
 
@@ -116,11 +122,11 @@ Il file di log CSV locale utilizza il punto e virgola (`;`) come separatore.
 
 | Colonna | Descrizione | Esempio |
 | :--- | :--- | :--- |
-| **Date** | Data sessione (dd/MM/yyyy) | `16/03/2026` |
-| **Time** | Ora evento con millisecondi (HH:mm:ss.fff) | `10:36:58.180` |
-| **Event** | Tipo evento (`GRAB`, `GAZE`, `FINE`, `EVENT`) | `GRAB` |
-| **ObjectName** | Nome oggetto, Zona interesse o Marker Custom | `Triangolo_Rosso` |
-| **Duration** | Durata in secondi o Tempo rimanente | `4.52` |
+| **Date** | Data sessione (dd/MM/yyyy) | `17/03/2026` |
+| **Time** | Ora evento con millisecondi (HH:mm:ss.fff) | `14:05:03.110` |
+| **Event** | Tipo evento (`GRAB`, `GAZE`, `FINE`, `EVENT`) | `EVENT` |
+| **ObjectName** | Nome oggetto, Zona interesse o Marker Custom | `Timer_Countdown_Started` |
+| **Duration** | Durata in secondi o Tempo rimanente | `120.00` |
 
 ### Payload API Server (JSON)
 ```json
@@ -129,11 +135,11 @@ Il file di log CSV locale utilizza il punto e virgola (`;`) come separatore.
   "filename": "Tangram_Session_5391.csv",
   "events": [
     {
-      "date": "16/03/2026",
-      "time": "10:36:58.180",
-      "event_type": "GAZE",
-      "object_name": "Tangram",
-      "duration": 0.1949230432510376
+      "date": "17/03/2026",
+      "time": "14:05:05.450",
+      "event_type": "GRAB",
+      "object_name": "Triangolo_Grande",
+      "duration": 1.20
     }
   ]
 }

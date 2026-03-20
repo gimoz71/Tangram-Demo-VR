@@ -45,6 +45,10 @@ public class TangramTimer : MonoBehaviour
         lastSecondRecorded = Mathf.CeilToInt(currentTime);
         UpdateUI();
 
+        // --- MODIFICA: LOG INIZIO FASE LAMPEGGIO ---
+        TangramLogger logger = FindObjectOfType<TangramLogger>();
+        if (logger != null) logger.LogData("EVENT", "Timer_Blinking_Phase_Started", initialDelay);
+
         // FACCIAMO LAMPEGGIARE IL TIMER DURANTE IL DELAY
         if (blinkCoroutine == null)
             blinkCoroutine = StartCoroutine(BlinkTextCoroutine());
@@ -66,6 +70,10 @@ public class TangramTimer : MonoBehaviour
 
         // Assicuriamoci che il testo sia visibile quando parte il conteggio
         if (timerText != null) timerText.enabled = true;
+
+        // --- MODIFICA: LOG FINE LAMPEGGIO / INIZIO COUNTDOWN EFFETTIVO ---
+        TangramLogger logger = FindObjectOfType<TangramLogger>();
+        if (logger != null) logger.LogData("EVENT", "Timer_Countdown_Started", totalTimeInSeconds);
 
         isRunning = true;
     }

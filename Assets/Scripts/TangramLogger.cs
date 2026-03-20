@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.XR.Interaction.Toolkit;
-using UnityEngine.Networking; // Aggiunto per l'invio web
+using UnityEngine.Networking;
 using System.IO;
 using System;
 using System.Collections;
@@ -28,8 +28,10 @@ public class SessionData
 public class TangramLogger : MonoBehaviour
 {
     [Header("--- API Backend ---")]
-    [Tooltip("Endpoint del server FastAPI per l'upload batch a fine sessione")]
-    public string serverEndpointUrl = "http://192.168.178.48/sessions/json";
+    [Tooltip("IP del server di default (usato se il file config non esiste)")]
+    public string serverIpDefault = "192.168.178.48";
+
+    private string serverEndpointUrl; // L'URL completo costruito a runtime
 
     private string filePath;
     public string currentSessionID;
@@ -42,10 +44,12 @@ public class TangramLogger : MonoBehaviour
     // Oggetto che manterrà in memoria gli eventi formattati per il server
     private SessionData sessionDataForServer;
 
-    // SPOSTATO IN AWAKE: Viene eseguito PRIMA di qualsiasi Start() degli altri script
     void Awake()
     {
-        // 1. GENERAZIONE CODICE
+        // 1. CARICAMENTO CONFIGURAZIONE IBRIDA (EDITOR VS STANDALONE)
+        LoadExternalConfig();
+
+        // 2. GENERAZIONE CODICE SESSIONE
         currentSessionID = UnityEngine.Random.Range(1000, 10000).ToString();
         string fileName = $"Tangram_Session_{currentSessionID}.csv";
 
@@ -54,7 +58,7 @@ public class TangramLogger : MonoBehaviour
         sessionDataForServer.session_id = currentSessionID;
         sessionDataForServer.filename = fileName;
 
-        // 2. DEFINIZIONE PERCORSO
+        // 3. DEFINIZIONE PERCORSO LOG CSV
         string folderPath = "";
 
 #if UNITY_EDITOR
@@ -65,7 +69,7 @@ public class TangramLogger : MonoBehaviour
         folderPath = Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.MyDocuments), "TangramVR_Logs");
 #endif
 
-        // 3. CREAZIONE CARTELLA
+        // 4. CREAZIONE CARTELLA LOG
         try
         {
             if (!Directory.Exists(folderPath))
@@ -84,9 +88,53 @@ public class TangramLogger : MonoBehaviour
         Debug.Log($"[CSV] Logger inizializzato in Awake. ID: {currentSessionID}");
     }
 
+    // Carica l'IP da un file di testo esterno (Assets in Editor, PersistentDataPath su Build)
+    private void LoadExternalConfig()
+    {
+        string configPath;
+
+#if UNITY_EDITOR
+        // Allineato allo script di test: cerca il file direttamente in Assets
+        configPath = Path.Combine(Application.dataPath, "server_config.txt");
+#else
+        // Su Build cerca nel percorso persistente del visore
+        configPath = Path.Combine(Application.persistentDataPath, "server_config.txt");
+#endif
+
+        string finalIP = serverIpDefault;
+
+        if (File.Exists(configPath))
+        {
+            try
+            {
+                string ipFromFile = File.ReadAllText(configPath).Trim();
+                if (!string.IsNullOrEmpty(ipFromFile))
+                {
+                    finalIP = ipFromFile;
+                    Debug.Log($"[API] IP caricato da config esterna ({configPath}): {finalIP}");
+                }
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[API] Errore lettura server_config.txt: {e.Message}");
+            }
+        }
+        else
+        {
+            // Se in Editor il file manca, lo creiamo per comodità
+#if UNITY_EDITOR
+            try { File.WriteAllText(configPath, serverIpDefault); } catch { }
+#endif
+            Debug.Log($"[API] Config non trovata. Uso default: {finalIP}");
+        }
+
+        // Costruisce l'URL finale (allineato alla porta 80)
+        serverEndpointUrl = $"http://{finalIP}/sessions/json";
+    }
+
     void Start()
     {
-        // 4. AUTOMAZIONE INTERAZIONI (Questo può restare in Start)
+        // 5. AUTOMAZIONE INTERAZIONI
         var interactables = FindObjectsOfType<XRGrabInteractable>();
         foreach (var interactable in interactables)
         {
@@ -95,7 +143,7 @@ public class TangramLogger : MonoBehaviour
         }
     }
 
-    // --- DA QUI IN GIU' E' TUTTO UGUALE A PRIMA ---
+    // --- LOGICA DI LOGGING ---
 
     void CreateFileHeader()
     {
@@ -138,7 +186,6 @@ public class TangramLogger : MonoBehaviour
     {
         if (!isLoggingActive) return;
 
-        // Se è la prima volta che scriviamo qualcosa (anche INFO), crea il file
         if (!fileCreated)
         {
             CreateFileHeader();
@@ -148,7 +195,7 @@ public class TangramLogger : MonoBehaviour
         string timePart = System.DateTime.Now.ToString("HH:mm:ss.fff");
         string durationStr = duration > 0 ? duration.ToString("F2") : "";
 
-        // -- 1. EXPORT LOCALE (CSV Completo) --
+        // -- 1. EXPORT LOCALE (CSV) --
         string line = $"{datePart};{timePart};{eventType};{objectName};{durationStr}\n";
 
         try
@@ -157,14 +204,10 @@ public class TangramLogger : MonoBehaviour
         }
         catch (Exception e)
         {
-            // Protezione extra nel caso il path fosse ancora null (non dovrebbe più succedere)
-            if (string.IsNullOrEmpty(filePath))
-                Debug.LogError("FilePath è null! Awake non ha funzionato correttamente.");
-            else
-                Debug.LogError($"Errore scrittura: {e.Message}");
+            Debug.LogError($"Errore scrittura: {e.Message}");
         }
 
-        // -- 2. PREPARAZIONE EXPORT SERVER (Solo eventi autorizzati) --
+        // -- 2. PREPARAZIONE EXPORT SERVER --
         if (eventType == "GAZE" || eventType == "GRAB" || eventType == "FINE")
         {
             SessionEvent newEvent = new SessionEvent
@@ -193,21 +236,15 @@ public class TangramLogger : MonoBehaviour
 
         Debug.Log($"Vittoria! Sessione conclusa: {currentSessionID}");
 
-        // Invia i dati formattati al server a fine sessione
         StartCoroutine(SendSessionDataToServer());
     }
 
-    // Coroutine per l'invio asincrono del JSON a fine sessione
     private IEnumerator SendSessionDataToServer()
     {
-        if (sessionDataForServer.events.Count == 0)
-        {
-            Debug.LogWarning("[API] Nessun evento da inviare al server.");
-            yield break;
-        }
+        if (sessionDataForServer.events.Count == 0) yield break;
 
         string jsonPayload = JsonUtility.ToJson(sessionDataForServer);
-        Debug.Log($"[API] JSON in partenza: {jsonPayload}");
+        Debug.Log($"[API] JSON in partenza per {serverEndpointUrl}: {jsonPayload}");
 
         int maxRetries = 3;
         int retryCount = 0;
@@ -223,38 +260,20 @@ public class TangramLogger : MonoBehaviour
                 request.downloadHandler = new DownloadHandlerBuffer();
                 request.SetRequestHeader("Content-Type", "application/json");
 
-                Debug.Log($"[API] Tentativo di invio {retryCount + 1} di {maxRetries} ({sessionDataForServer.events.Count} eventi)...");
-
                 yield return request.SendWebRequest();
 
                 if (request.result == UnityWebRequest.Result.Success)
                 {
-                    Debug.Log($"[API] Dati inviati con successo! Risposta: {request.downloadHandler.text}");
+                    Debug.Log($"[API] Dati inviati con successo!");
                     success = true;
                 }
                 else
                 {
+                    if (request.responseCode == 409) { success = true; yield break; }
+
                     retryCount++;
-
-                    // Errore 409: Il server ha già questi dati (evitiamo di riprovare inutilmente)
-                    if (request.responseCode == 409)
-                    {
-                        Debug.LogWarning("[API] Conflitto (409): La sessione esiste già sul server. Esco dal loop.");
-                        success = true;
-                        yield break;
-                    }
-
-                    Debug.LogError($"[API] Tentativo {retryCount} fallito: {request.error}");
-
-                    if (retryCount < maxRetries)
-                    {
-                        Debug.Log($"[API] Attesa di {delayBetweenRetries} secondi prima del prossimo tentativo...");
-                        yield return new WaitForSeconds(delayBetweenRetries);
-                    }
-                    else
-                    {
-                        Debug.LogError("[API] Invio fallito definitivamente dopo tutti i tentativi.");
-                    }
+                    Debug.LogError($"[API] Fallimento {retryCount}: {request.error}");
+                    yield return new WaitForSeconds(delayBetweenRetries);
                 }
             }
         }
