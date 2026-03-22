@@ -1119,7 +1119,6 @@ GameObject:
   - component: {fileID: 578240668847196289}
   - component: {fileID: 2934430072587955358}
   - component: {fileID: 3818603186330482435}
-  - component: {fileID: 6538097552659880448}
   - component: {fileID: 3614102924700563742}
   m_Layer: 0
   m_Name: Plane
@@ -1193,28 +1192,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!64 &6538097552659880448
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 429536399127861953}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
 --- !u!114 &3614102924700563742
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3675,7 +3652,6 @@ GameObject:
   - component: {fileID: 1095076157207881663}
   - component: {fileID: 1095076157207111583}
   - component: {fileID: 1095076157206111583}
-  - component: {fileID: 5383881671658436651}
   - component: {fileID: 1610979647576573378}
   m_Layer: 0
   m_Name: Altare
@@ -3765,28 +3741,6 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!64 &5383881671658436651
-MeshCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5383881671658436649}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 5
-  m_Convex: 0
-  m_CookingOptions: 30
-  m_Mesh: {fileID: 4300004, guid: f06c7f9b24c7f4a449a5ff58a1ea1cee, type: 3}
 --- !u!114 &1610979647576573378
 MonoBehaviour:
   m_ObjectHideFlags: 0
