@@ -38,13 +38,17 @@ public class ServerConnectionCheck : MonoBehaviour
         {
             try
             {
-                content = File.ReadAllText(path);
+                // --- MODIFICA: Legge le righe singolarmente e prende solo la prima ---
+                string[] lines = File.ReadAllLines(path);
+                if (lines.Length > 0 && !string.IsNullOrEmpty(lines[0].Trim()))
+                {
+                    content = lines[0].Trim();
+                }
             }
             catch { }
         }
 
-        // PULIZIA IMMEDIATA: Rimuove spazi, ritorni a capo Windows/Unix e caratteri invisibili
-        return content.Replace("\n", "").Replace("\r", "").Replace(" ", "").Trim();
+        return content;
     }
 
     private IEnumerator HealthCheckRoutine()

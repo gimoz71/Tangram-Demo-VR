@@ -1,11 +1,13 @@
 using System.Collections;
+using System.IO;
+using System;
 using UnityEngine;
 using TMPro;
 using UnityEngine.Events;
 
 public class TangramTimer : MonoBehaviour
 {
-    [Header("--- Impostazioni Tempo ---")]
+    [Header("--- Impostazioni Tempo (Default se manca il file) ---")]
     [Tooltip("Tempo totale a disposizione in secondi (es. 60 = 1 minuto)")]
     public float totalTimeInSeconds = 60f;
 
@@ -39,17 +41,65 @@ public class TangramTimer : MonoBehaviour
     private int lastSecondRecorded;
     private Coroutine blinkCoroutine;
 
+    void Awake()
+    {
+        // --- Caricamento configurazione unificata ---
+        LoadExternalConfig();
+    }
+
+    private void LoadExternalConfig()
+    {
+        string configPath;
+
+#if UNITY_EDITOR
+        configPath = Path.Combine(Application.dataPath, "server_config.txt");
+#else
+        configPath = Path.Combine(Application.persistentDataPath, "server_config.txt");
+#endif
+
+        if (File.Exists(configPath))
+        {
+            try
+            {
+                // Legge tutte le righe del file in un array
+                string[] lines = File.ReadAllLines(configPath);
+
+                // lines[0] è l'IP del Server (la ignoriamo qui, la usa il TangramLogger)
+
+                // Riga 2: Total Time
+                if (lines.Length >= 2 && float.TryParse(lines[1].Trim(), out float newTotalTime))
+                    totalTimeInSeconds = newTotalTime;
+
+                // Riga 3: Initial Delay
+                if (lines.Length >= 3 && float.TryParse(lines[2].Trim(), out float newDelay))
+                    initialDelay = newDelay;
+
+                // Riga 4: Pressure Threshold
+                if (lines.Length >= 4 && float.TryParse(lines[3].Trim(), out float newPressure))
+                    pressureThreshold = newPressure;
+
+                Debug.Log($"[TIMER] Config unificata caricata: Tot:{totalTimeInSeconds}s | Delay:{initialDelay}s | Press:{pressureThreshold}s");
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[TIMER] Errore lettura server_config.txt: {e.Message}");
+            }
+        }
+        else
+        {
+            Debug.Log($"[TIMER] server_config.txt non trovato. Uso i default dell'Inspector.");
+        }
+    }
+
     void Start()
     {
         currentTime = totalTimeInSeconds;
         lastSecondRecorded = Mathf.CeilToInt(currentTime);
         UpdateUI();
 
-        // --- MODIFICA: LOG INIZIO FASE LAMPEGGIO ---
         TangramLogger logger = FindObjectOfType<TangramLogger>();
         if (logger != null) logger.LogData("EVENT", "Timer_Blinking_Phase_Started", initialDelay);
 
-        // FACCIAMO LAMPEGGIARE IL TIMER DURANTE IL DELAY
         if (blinkCoroutine == null)
             blinkCoroutine = StartCoroutine(BlinkTextCoroutine());
 
@@ -61,17 +111,14 @@ public class TangramTimer : MonoBehaviour
         isRunning = false;
         yield return new WaitForSeconds(initialDelay);
 
-        // IL DELAY È FINITO: FERMIAMO IL LAMPEGGIO E FACCIAMO PARTIRE IL TIMER
         if (blinkCoroutine != null)
         {
             StopCoroutine(blinkCoroutine);
             blinkCoroutine = null;
         }
 
-        // Assicuriamoci che il testo sia visibile quando parte il conteggio
         if (timerText != null) timerText.enabled = true;
 
-        // --- MODIFICA: LOG FINE LAMPEGGIO / INIZIO COUNTDOWN EFFETTIVO ---
         TangramLogger logger = FindObjectOfType<TangramLogger>();
         if (logger != null) logger.LogData("EVENT", "Timer_Countdown_Started", totalTimeInSeconds);
 
@@ -125,7 +172,6 @@ public class TangramTimer : MonoBehaviour
         if (tickAudioSource != null) tickAudioSource.Stop();
         if (timeUpAudioSource != null) timeUpAudioSource.Play();
 
-        // Ricomincia a lampeggiare perché il tempo è finito
         if (blinkCoroutine == null)
             blinkCoroutine = StartCoroutine(BlinkTextCoroutine());
 
@@ -159,15 +205,12 @@ public class TangramTimer : MonoBehaviour
         if (logger != null) logger.LogData("EVENT", "Timer_Stopped_On_Win", currentTime);
     }
 
-    // --- AGGIUNTA: FUNZIONE PER CONGELARE IL TIMER QUANDO SI RINUNCIA ---
     public void StopTimerOnGiveUp()
     {
         isRunning = false;
 
-        // Stoppa il suono ansiogeno se era partito
         if (tickAudioSource != null) tickAudioSource.Stop();
 
-        // Ferma l'eventuale lampeggio e assicurati che il testo rimanga visibile per mostrare il tempo congelato
         if (blinkCoroutine != null)
         {
             StopCoroutine(blinkCoroutine);
@@ -175,7 +218,6 @@ public class TangramTimer : MonoBehaviour
         }
         if (timerText != null) timerText.enabled = true;
     }
-    // --------------------------------------------------------------------
 
     private void UpdateUI()
     {

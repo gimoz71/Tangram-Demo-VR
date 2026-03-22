@@ -126,10 +126,12 @@ public class TangramLogger : MonoBehaviour
         {
             try
             {
-                string ipFromFile = File.ReadAllText(configPath).Trim();
-                if (!string.IsNullOrEmpty(ipFromFile))
+                // --- MODIFICA: Legge le righe singolarmente e prende solo la prima ---
+                string[] lines = File.ReadAllLines(configPath);
+
+                if (lines.Length > 0 && !string.IsNullOrEmpty(lines[0].Trim()))
                 {
-                    finalIP = ipFromFile;
+                    finalIP = lines[0].Trim();
                     Debug.Log($"[API] IP caricato da config esterna ({configPath}): {finalIP}");
                 }
             }
