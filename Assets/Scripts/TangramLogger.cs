@@ -229,7 +229,8 @@ public class TangramLogger : MonoBehaviour
         }
 
         // -- 2. PREPARAZIONE EXPORT SERVER --
-        if (eventType == "GAZE" || eventType == "GRAB" || eventType == "FINE" || eventType == "RINUNCIA")
+        // Aggiunto "EVENT" alla condizione
+        if (eventType == "GAZE" || eventType == "GRAB" || eventType == "FINE" || eventType == "RINUNCIA" || eventType == "EVENT")
         {
             SessionEvent newEvent = new SessionEvent
             {
