@@ -159,6 +159,24 @@ public class TangramTimer : MonoBehaviour
         if (logger != null) logger.LogData("EVENT", "Timer_Stopped_On_Win", currentTime);
     }
 
+    // --- AGGIUNTA: FUNZIONE PER CONGELARE IL TIMER QUANDO SI RINUNCIA ---
+    public void StopTimerOnGiveUp()
+    {
+        isRunning = false;
+
+        // Stoppa il suono ansiogeno se era partito
+        if (tickAudioSource != null) tickAudioSource.Stop();
+
+        // Ferma l'eventuale lampeggio e assicurati che il testo rimanga visibile per mostrare il tempo congelato
+        if (blinkCoroutine != null)
+        {
+            StopCoroutine(blinkCoroutine);
+            blinkCoroutine = null;
+        }
+        if (timerText != null) timerText.enabled = true;
+    }
+    // --------------------------------------------------------------------
+
     private void UpdateUI()
     {
         if (timerText != null)

@@ -31,6 +31,25 @@ public class TangramLogger : MonoBehaviour
     [Tooltip("IP del server di default (usato se il file config non esiste)")]
     public string serverIpDefault = "192.168.178.48";
 
+    [Header("--- UI ---")]
+    [Tooltip("Trascina qui il bottone Rinuncia (o il suo Canvas) per nasconderlo a fine partita")]
+    public GameObject pulsanteRinuncia;
+
+    // --- AGGIUNTA: Riferimenti per la gestione testi Rinuncia ---
+    [Tooltip("Il componente Text (TMP) dentro il bottone di rinuncia")]
+    public TMPro.TMP_Text testoBottoneRinuncia;
+
+    [Tooltip("Un testo (TMP) extra per mostrare l'ID sessione solo dopo la rinuncia")]
+    public TMPro.TMP_Text testoIdSessioneRinuncia;
+
+    // --- AGGIUNTA: Evento per fermare il Timer ---
+    [Header("--- Eventi ---")]
+    public UnityEngine.Events.UnityEvent onRinunciaEvent;
+    // ---------------------------------------------
+
+    private bool haGiaRinunciato = false;
+    // ------------------------------------------------------------
+
     private string serverEndpointUrl; // L'URL completo costruito a runtime
 
     private string filePath;
@@ -208,7 +227,7 @@ public class TangramLogger : MonoBehaviour
         }
 
         // -- 2. PREPARAZIONE EXPORT SERVER --
-        if (eventType == "GAZE" || eventType == "GRAB" || eventType == "FINE")
+        if (eventType == "GAZE" || eventType == "GRAB" || eventType == "FINE" || eventType == "RINUNCIA")
         {
             SessionEvent newEvent = new SessionEvent
             {
@@ -230,6 +249,12 @@ public class TangramLogger : MonoBehaviour
     public void LogVictory()
     {
         if (!isLoggingActive) return;
+
+        // --- NASCONDE IL PULSANTE QUANDO VINCI ---
+        if (pulsanteRinuncia != null)
+        {
+            pulsanteRinuncia.SetActive(false);
+        }
 
         LogData("FINE", "Tangram completato", 0f);
         isLoggingActive = false;
@@ -277,5 +302,54 @@ public class TangramLogger : MonoBehaviour
                 }
             }
         }
+    }
+
+    // --- FUNZIONE PER IL TASTO RINUNCIA ---
+    public void LogGiveUp()
+    {
+        // Se l'utente clicca una seconda volta dopo la rinuncia, cambia scena
+        if (haGiaRinunciato)
+        {
+            UnityEngine.SceneManagement.SceneManager.LoadScene("StartMenu");
+            return;
+        }
+
+        if (!isLoggingActive) return;
+
+        // FASE 1: LOG E CHIUSURA SESSIONE
+        LogData("RINUNCIA", "Sessione interrotta dall'utente", 0f);
+        isLoggingActive = false;
+        haGiaRinunciato = true;
+
+        // --- AGGIUNTA: Richiama l'evento per fermare il timer ---
+        if (onRinunciaEvent != null)
+        {
+            onRinunciaEvent.Invoke();
+        }
+        // ---------------------------------------------------------
+
+        Debug.Log($"Utente arreso. Sessione conclusa: {currentSessionID}");
+
+        // AGGIORNAMENTO UI
+        if (testoBottoneRinuncia != null)
+        {
+            testoBottoneRinuncia.text = "Torna al menu";
+        }
+
+        if (testoIdSessioneRinuncia != null)
+        {
+            testoIdSessioneRinuncia.text = "Session ID: " + currentSessionID;
+            testoIdSessioneRinuncia.gameObject.SetActive(true);
+        }
+
+        // Avviamo l'invio dati al server (senza cambiare scena subito)
+        StartCoroutine(SendSessionDataToServer());
+    }
+
+    private IEnumerator SendSessionDataAndExit()
+    {
+        yield return StartCoroutine(SendSessionDataToServer());
+        yield return new WaitForSeconds(0.5f);
+        UnityEngine.SceneManagement.SceneManager.LoadScene("StartMenu");
     }
 }
