@@ -4,6 +4,17 @@ using System;
 using UnityEngine;
 using TMPro;
 using UnityEngine.Events;
+using UnityEngine.Networking; // Aggiunto per comunicare col server
+
+// --- AGGIUNTA: Classe per decodificare il JSON dal server FastAPI ---
+[System.Serializable]
+public class TimerServerConfig
+{
+    public float totalTimeInSeconds;
+    public float initialDelay;
+    public float pressureThreshold;
+}
+// --------------------------------------------------------------------
 
 public class TangramTimer : MonoBehaviour
 {
@@ -41,13 +52,16 @@ public class TangramTimer : MonoBehaviour
     private int lastSecondRecorded;
     private Coroutine blinkCoroutine;
 
+    // Variabile per salvare l'IP estratto dal file
+    private string serverIP = "192.168.178.48";
+
     void Awake()
     {
-        // --- Caricamento configurazione unificata ---
-        LoadExternalConfig();
+        // Spostiamo la lettura locale in Awake per preparare subito il Piano B e l'IP
+        LoadLocalFallbackAndIP();
     }
 
-    private void LoadExternalConfig()
+    private void LoadLocalFallbackAndIP()
     {
         string configPath;
 
@@ -61,24 +75,25 @@ public class TangramTimer : MonoBehaviour
         {
             try
             {
-                // Legge tutte le righe del file in un array
                 string[] lines = File.ReadAllLines(configPath);
 
-                // lines[0] è l'IP del Server (la ignoriamo qui, la usa il TangramLogger)
+                // Riga 1: IP Server
+                if (lines.Length > 0 && !string.IsNullOrEmpty(lines[0].Trim()))
+                    serverIP = lines[0].Trim();
 
-                // Riga 2: Total Time
+                // Riga 2: Total Time (Piano B)
                 if (lines.Length >= 2 && float.TryParse(lines[1].Trim(), out float newTotalTime))
                     totalTimeInSeconds = newTotalTime;
 
-                // Riga 3: Initial Delay
+                // Riga 3: Initial Delay (Piano B)
                 if (lines.Length >= 3 && float.TryParse(lines[2].Trim(), out float newDelay))
                     initialDelay = newDelay;
 
-                // Riga 4: Pressure Threshold
+                // Riga 4: Pressure Threshold (Piano B)
                 if (lines.Length >= 4 && float.TryParse(lines[3].Trim(), out float newPressure))
                     pressureThreshold = newPressure;
 
-                Debug.Log($"[TIMER] Config unificata caricata: Tot:{totalTimeInSeconds}s | Delay:{initialDelay}s | Press:{pressureThreshold}s");
+                Debug.Log($"[TIMER] Piano B locale preparato. IP Server: {serverIP}");
             }
             catch (Exception e)
             {
@@ -91,8 +106,13 @@ public class TangramTimer : MonoBehaviour
         }
     }
 
-    void Start()
+    // --- MODIFICA: Ora Start è un'IEnumerator per aspettare il server prima di partire ---
+    IEnumerator Start()
     {
+        // 1. Prova a scaricare i dati aggiornati dal server
+        yield return StartCoroutine(FetchConfigFromServer());
+
+        // 2. SOLO ORA avvia la logica visiva e il conteggio del timer
         currentTime = totalTimeInSeconds;
         lastSecondRecorded = Mathf.CeilToInt(currentTime);
         UpdateUI();
@@ -104,6 +124,40 @@ public class TangramTimer : MonoBehaviour
             blinkCoroutine = StartCoroutine(BlinkTextCoroutine());
 
         StartCoroutine(StartWithDelay());
+    }
+
+    private IEnumerator FetchConfigFromServer()
+    {
+        // Specifica qui l'endpoint del tuo server FastAPI
+        string url = $"http://{serverIP}/config";
+
+        using (UnityWebRequest request = UnityWebRequest.Get(url))
+        {
+            request.timeout = 3; // Timeout breve per non tenere il giocatore ad aspettare troppo
+            yield return request.SendWebRequest();
+
+            if (request.result == UnityWebRequest.Result.Success)
+            {
+                try
+                {
+                    // Sovrascrive i valori locali con quelli del JSON del server
+                    TimerServerConfig apiConfig = JsonUtility.FromJson<TimerServerConfig>(request.downloadHandler.text);
+                    totalTimeInSeconds = apiConfig.totalTimeInSeconds;
+                    initialDelay = apiConfig.initialDelay;
+                    pressureThreshold = apiConfig.pressureThreshold;
+
+                    Debug.Log($"[TIMER] Dati ricevuti dal Server: Tot:{totalTimeInSeconds}s | Delay:{initialDelay}s | Press:{pressureThreshold}s");
+                }
+                catch (Exception e)
+                {
+                    Debug.LogWarning($"[TIMER] Errore nel parsing JSON del server. Uso il Piano B. Errore: {e.Message}");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"[TIMER] Server non raggiungibile o in errore ({request.responseCode}). Uso il Piano B locale.");
+            }
+        }
     }
 
     private IEnumerator StartWithDelay()

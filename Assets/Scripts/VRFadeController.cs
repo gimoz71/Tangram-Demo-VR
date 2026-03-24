@@ -13,11 +13,15 @@ public class VRFadeController : MonoBehaviour
         canvasGroup.alpha = 1f;
     }
 
-    IEnumerator Start()
+    // --- MODIFICA: Ora è una funzione pubblica che aspetta di essere chiamata ---
+    public void StartFade()
     {
-        // 1. Aspettiamo che la fisica e il tracking XR si stabilizzino.
-        // Aspettare due frame "EndOfFrame" garantisce che l'utente non veda 
-        // assolutamente nulla del setup iniziale.
+        StartCoroutine(FadeRoutine());
+    }
+
+    private IEnumerator FadeRoutine()
+    {
+        // 1. Aspettiamo un paio di frame per sicurezza dopo l'allineamento
         yield return new WaitForEndOfFrame();
         yield return new WaitForEndOfFrame();
 
