@@ -1267,7 +1267,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   statusText: {fileID: 1578736585}
-  defaultIp: 192.168.1.48
+  defaultIp: 192.168.8.100
   timeout: 3
 --- !u!114 &1578736585
 MonoBehaviour:

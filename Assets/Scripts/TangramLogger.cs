@@ -29,7 +29,7 @@ public class TangramLogger : MonoBehaviour
 {
     [Header("--- API Backend ---")]
     [Tooltip("IP del server di default (usato se il file config non esiste)")]
-    public string serverIpDefault = "192.168.178.48";
+    public string serverIpDefault = "192.168.8.100";
 
     [Header("--- UI ---")]
     [Tooltip("Trascina qui il bottone Rinuncia (o il suo Canvas) per nasconderlo a fine partita")]

@@ -10,7 +10,7 @@ public class ServerConnectionCheck : MonoBehaviour
     public TextMeshProUGUI statusText;
 
     [Header("Settings")]
-    public string defaultIp = "192.168.178.48";
+    public string defaultIp = "192.168.8.100";
     public float timeout = 5.0f; // Alzato a 5 per maggiore stabilità
 
     private string currentIp;

@@ -852,6 +852,7 @@ GameObject:
   - component: {fileID: 774888836}
   - component: {fileID: 774888839}
   - component: {fileID: 774888838}
+  - component: {fileID: 774888840}
   - component: {fileID: 774888837}
   m_Layer: 0
   m_Name: TangramTimer
@@ -887,12 +888,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d718014c5701d0944a3c0ac947b1480b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  totalTimeInSeconds: 20
-  initialDelay: 2
-  pressureThreshold: 5
+  totalTimeInSeconds: 300
+  initialDelay: 10
+  pressureThreshold: 60
   blinkInterval: 0.5
   tickAudioSource: {fileID: 774888839}
   timeUpAudioSource: {fileID: 774888838}
+  countdownBeepAudioSource: {fileID: 774888839}
+  startBeepAudioSource: {fileID: 774888840}
   timerText: {fileID: 892129861}
   OnTimeUp:
     m_PersistentCalls:
@@ -1004,6 +1007,102 @@ AudioSource:
   serializedVersion: 4
   OutputAudioMixerGroup: {fileID: 0}
   m_audioClip: {fileID: 8300000, guid: afb009a21fceb9d4ba53407565f44042, type: 3}
+  m_PlayOnAwake: 0
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+--- !u!82 &774888840
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 774888835}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 8300000, guid: 2886f2ca40f3f4d4f9cc4ce14a5676ff, type: 3}
   m_PlayOnAwake: 0
   m_Volume: 1
   m_Pitch: 1
@@ -1920,7 +2019,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 9d0a13f9cc3e5be409ffda9c1ed7bb1f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  serverIpDefault: 192.168.178.48
+  serverIpDefault: 192.168.8.100
   pulsanteRinuncia: {fileID: 607088757}
   testoBottoneRinuncia: {fileID: 402458119}
   testoIdSessioneRinuncia: {fileID: 1604677817}
@@ -3450,6 +3549,16 @@ PrefabInstance:
         type: 3}
       propertyPath: m_Enabled
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5383881670158923883, guid: cb8eb455874fa18479ea37b84e721751,
+        type: 3}
+      propertyPath: m_Volume
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 5383881670158923883, guid: cb8eb455874fa18479ea37b84e721751,
+        type: 3}
+      propertyPath: m_Enabled
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 5383881670191559223, guid: cb8eb455874fa18479ea37b84e721751,
         type: 3}

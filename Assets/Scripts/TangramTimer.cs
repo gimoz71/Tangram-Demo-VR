@@ -38,6 +38,12 @@ public class TangramTimer : MonoBehaviour
     [Tooltip("L'AudioSource che contiene il SUONO TRISTE di fine tempo")]
     public AudioSource timeUpAudioSource;
 
+    [Tooltip("Suono per il countdown iniziale (es. i semafori rossi della F1)")]
+    public AudioSource countdownBeepAudioSource;
+
+    [Tooltip("Suono per il via effettivo (es. semaforo verde)")]
+    public AudioSource startBeepAudioSource;
+
     [Tooltip("Testo dell'interfaccia per mostrare il countdown")]
     public TextMeshProUGUI timerText;
 
@@ -52,17 +58,26 @@ public class TangramTimer : MonoBehaviour
     private int lastSecondRecorded;
     private Coroutine blinkCoroutine;
 
-    // Variabile per salvare l'IP estratto dal file
-    private string serverIP = "192.168.178.48";
+    // --- MODIFICA: Rimosso l'IP hardcoded. Ora lo decideremo a runtime ---
+    private string serverIP;
 
     void Awake()
     {
-        // Spostiamo la lettura locale in Awake per preparare subito il Piano B e l'IP
         LoadLocalFallbackAndIP();
     }
 
     private void LoadLocalFallbackAndIP()
     {
+        // --- MODIFICA: Centralizzazione dell'IP ---
+        // Prima cosa: andiamo a leggere l'IP di default dal ServerConnectionCheck
+        serverIP = "127.0.0.1"; // Fallback di assoluta emergenza
+        ServerConnectionCheck serverCheck = FindObjectOfType<ServerConnectionCheck>();
+        if (serverCheck != null)
+        {
+            serverIP = serverCheck.defaultIp;
+        }
+        // ------------------------------------------
+
         string configPath;
 
 #if UNITY_EDITOR
@@ -77,7 +92,7 @@ public class TangramTimer : MonoBehaviour
             {
                 string[] lines = File.ReadAllLines(configPath);
 
-                // Riga 1: IP Server
+                // Riga 1: IP Server (sovrascrive il default del ServerConnectionCheck se presente)
                 if (lines.Length > 0 && !string.IsNullOrEmpty(lines[0].Trim()))
                     serverIP = lines[0].Trim();
 
@@ -102,17 +117,14 @@ public class TangramTimer : MonoBehaviour
         }
         else
         {
-            Debug.Log($"[TIMER] server_config.txt non trovato. Uso i default dell'Inspector.");
+            Debug.Log($"[TIMER] server_config.txt non trovato. Uso i default dell'Inspector e l'IP: {serverIP}");
         }
     }
 
-    // --- MODIFICA: Ora Start è un'IEnumerator per aspettare il server prima di partire ---
     IEnumerator Start()
     {
-        // 1. Prova a scaricare i dati aggiornati dal server
         yield return StartCoroutine(FetchConfigFromServer());
 
-        // 2. SOLO ORA avvia la logica visiva e il conteggio del timer
         currentTime = totalTimeInSeconds;
         lastSecondRecorded = Mathf.CeilToInt(currentTime);
         UpdateUI();
@@ -128,19 +140,17 @@ public class TangramTimer : MonoBehaviour
 
     private IEnumerator FetchConfigFromServer()
     {
-        // Specifica qui l'endpoint del tuo server FastAPI
         string url = $"http://{serverIP}/config";
 
         using (UnityWebRequest request = UnityWebRequest.Get(url))
         {
-            request.timeout = 3; // Timeout breve per non tenere il giocatore ad aspettare troppo
+            request.timeout = 3;
             yield return request.SendWebRequest();
 
             if (request.result == UnityWebRequest.Result.Success)
             {
                 try
                 {
-                    // Sovrascrive i valori locali con quelli del JSON del server
                     TimerServerConfig apiConfig = JsonUtility.FromJson<TimerServerConfig>(request.downloadHandler.text);
                     totalTimeInSeconds = apiConfig.totalTimeInSeconds;
                     initialDelay = apiConfig.initialDelay;
@@ -163,7 +173,20 @@ public class TangramTimer : MonoBehaviour
     private IEnumerator StartWithDelay()
     {
         isRunning = false;
-        yield return new WaitForSeconds(initialDelay);
+
+        float delayTimer = initialDelay;
+        while (delayTimer > 0f)
+        {
+            if (countdownBeepAudioSource != null)
+                countdownBeepAudioSource.PlayOneShot(countdownBeepAudioSource.clip);
+
+            float waitTime = Mathf.Min(1f, delayTimer);
+            yield return new WaitForSeconds(waitTime);
+            delayTimer -= waitTime;
+        }
+
+        if (startBeepAudioSource != null)
+            startBeepAudioSource.PlayOneShot(startBeepAudioSource.clip);
 
         if (blinkCoroutine != null)
         {
